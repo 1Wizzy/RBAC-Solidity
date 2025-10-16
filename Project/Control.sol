@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import '../RBAC/RBAC.sol';
+
 
 /// @title 物流信息合约
 /// @author q1ngying
 contract Control{
-    
+    RBAC RBACContract =  new RBAC(address(this));
     /**
      * @dev 各参数含义：
      * transferStationNumber 当前货物所在中转站序号
@@ -30,6 +32,7 @@ contract Control{
     bool arrive;
     address processor; //bytes20 slot2
     uint256 immutable cargoInfo; //bytes32 slot3
+
     
     
     /**
@@ -72,15 +75,35 @@ contract Control{
         ) {
             transferStationNumber = 0;
             shipper = _shipper;
+
+            // grantRole(SHIPPER_ROLE, _shipper);
+            // RBACContract.grantRole(RBACContract.SHIPPER_ROLE, _shipper);
+            RBACContract.grantShipper(_shipper);
+
             origin = _origin;
             consignee = _consignee;
+
+            // grantRole(CONSIGNEE_ROLE, _consignee);
+            // RBACContract.grantRole(RBACContract.CONSIGNEE_ROLE, _consignee);
+            RBACContract.grantConsignee(_consignee);
+
             destination = _destination;
             logisticsType = _logisticsType;
             insurance = _insurance;
             version = _version;
             processor = _nextProcessor;
+
+            // grantRole(TRANSFER_ROLE, _nextProcessor);
+            // RBACContract.grantRole(RBACContract.TRANSFER_ROLE, _nextProcessor);
+            RBACContract.grantTransfer(_nextProcessor);
+
             cargoInfo = _cargoInfo;
-            permissions[_consignee] = true;
+            // permissions[_consignee] = true;
+
+            // grantRole(GRANTEE_ROLE, _consignee);
+            // RBACContract.grantRole(RBACContract.GRANTEE_ROLE, _consignee);
+            RBACContract.grantGrantee(_consignee);
+
             arrive = false;
             TransferStation memory transferStation =TransferStation(
                 transferStationNumber,
@@ -108,19 +131,22 @@ contract Control{
 
     /// @dev 判断调用者是否有权将信息上链
     modifier isProcessor() { 
-        require(tx.origin == processor, 'Control: You are not the current processor');
+        require(RBACContract.hasTransfer(tx.origin), 'Control: You are not the current processor');
+        // require(tx.origin == processor, 'Control: You are not the current processor');
         _;
     }
     
     /// @dev 判断调用者是否为收货人
     modifier isOwner() { 
-        require(tx.origin == consignee, 'Control: You are not the consignee!');
+        require(RBACContract.hasConsignee(tx.origin), 'Control: You are not the consignee!');
+        // require(tx.origin == consignee, 'Control: You are not the consignee!');
         _;
     }
 
     /// @dev 判断调用者是否被授权
     modifier havePermissions() {
-        require(permissions[tx.origin], 'Control: You don not have permissions!');
+        require(RBACContract.hasGrantee(tx.origin), 'Control: You don not have permissions!');
+        // require(permissions[tx.origin], 'Control: You don not have permissions!');
         _;
     }
 
@@ -259,7 +285,7 @@ contract Control{
     }
      
     /**
-     * @dev 到达收获地点时调用该函数
+     * @dev 到达收货地点时调用该函数
      * @param _transferStationCode 当前的中转站代码 
      */
     function arriveDestination(bytes2 _transferStationCode) isProcessor external {
@@ -273,7 +299,9 @@ contract Control{
      * @param user 授权用户的合约地址
      */
     function grantPermission(address user) external isOwner {
-        permissions[user] = true;
+        // grantRole(GRANTEE_ROLE, user);
+        RBACContract.grantGrantee(user);
+        // permissions[user] = true;
     }
     
     /**
@@ -282,7 +310,8 @@ contract Control{
      */
     function revokePermission(address user) external isOwner { 
         require(user != consignee,'Control: You can not revoke yourself permission');
-        permissions[user] = false;
+        RBACContract.revokeGrantee(user);
+        // permissions[user] = false;
     }
 
     /**

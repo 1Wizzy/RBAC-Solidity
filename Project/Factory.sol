@@ -6,9 +6,11 @@ import {TransferStationControl} from './TransferStationControl.sol';
 import {ConsigneeControl} from './ConsigneeControl.sol';
 
 /// @title 工厂合约
-/// @author q1ngying
+/// @author q1ngying wizzyang
+/// @notice this project was refactored by wizzyang, implementing the RBAC
 /// @notice 每一个发货地只需要部署一个工厂合约，这样后续发货时只需要调用 start 函数即可
 /// @notice 每次调用 start 函数时都会触发 Start 事件，事件记录了三个合约的地址和该工厂合约一共部署的 Control 合约数量
+
 
 contract Factory {
     uint256 controlNumber;

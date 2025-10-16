@@ -5,6 +5,7 @@
 # Remix plugin state folders
 .deps/
 deps/
+.states/
 states/
 
 
