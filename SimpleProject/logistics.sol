@@ -35,6 +35,11 @@ contract Logistics is RBAC{
         _;
     }
 
+    modifier inPath() {
+        require(msg.sender == path[index], "Permission Denined.");
+        _;
+    }
+
     // Events
     event move(uint256 indexed no, address _from, address _to, uint256 _timestamp, Status _status);
 
@@ -67,20 +72,21 @@ contract Logistics is RBAC{
         
     }
     
-    function startShip() public onlyRole(SHIPPER_ROLE) inStatus(Status.Ready) {
+    function startShip() public onlyRole(SHIPPER_ROLE) inStatus(Status.Ready) inPath() {
         status = Status.Transit;
         emit move(index, path[index], path[index + 1], block.timestamp, status);
         index ++;
     }
 
-    function transferShip() public onlyRole(TRANSFER_ROLE) inStatus(Status.Transit) inCargo(msg.sender){
+    function transferShip() public onlyRole(TRANSFER_ROLE) inStatus(Status.Transit) inCargo(msg.sender) inPath(){
         emit move(index, path[index], path[index + 1], block.timestamp, status);
         index ++;
-        if (index == path.length) 
+        revokeRole(TRANSFER_ROLE, msg.sender);
+        if (index == path.length - 1) 
             status = Status.ToBeSigned;
     }
 
-    function signShip() public onlyRole(CONSIGNEE_ROLE) inStatus(Status.ToBeSigned){
+    function signShip() public onlyRole(CONSIGNEE_ROLE) inStatus(Status.ToBeSigned) inPath(){
         emit move(index, path[index], path[index + 1], block.timestamp, status);
         index ++;
         status = Status.Signed;
