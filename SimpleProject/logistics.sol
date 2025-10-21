@@ -87,7 +87,7 @@ contract Logistics is RBAC{
     }
 
     function signShip() public onlyRole(CONSIGNEE_ROLE) inStatus(Status.ToBeSigned) inPath(){
-        emit move(index, path[index], path[index + 1], block.timestamp, status);
+        emit move(index, path[index], path[index], block.timestamp, status);
         index ++;
         status = Status.Signed;
     }
